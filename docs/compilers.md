@@ -214,7 +214,7 @@ private lazy val print: Parsley[Stmt.Print[UN]]     = Print("print" ~> expr)
 private lazy val println: Parsley[Stmt.Println[UN]] = Println("println" ~> expr)
 private lazy val ifElse: Parsley[Stmt.IfElse[UN]]   = IfElseScoped("if" ~> expr, (missingThenErr | "then") ~> Scope(stmts, noVars), "else"
   .explain("if statements must have both a then and an else branch") ~> Scope(stmts, noVars) <~ "fi")
-````
+```
 
 As can be seen, it is relatively easy to parse source language (strings) into AST Nodes.
 
