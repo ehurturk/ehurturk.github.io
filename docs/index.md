@@ -2,6 +2,10 @@
 icon: lucide/rocket
 ---
 
+# Notes
+
+* [Compilers](https://ehurturk.github.io/compilers)
+
 # Get started
 
 For full documentation visit [zensical.org](https://zensical.org/docs/).
