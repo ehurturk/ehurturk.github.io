@@ -104,7 +104,8 @@ An `nvme_dev` struct represents an NVMe device. "Each `nvme_dev` is a PCI functi
 - `struct nvme_ctrl ctrl`: the controller itself
 and other NVMe related fields. One of the important fields is the controller, which is an `nvme_ctrl` struct. 
 
-> NOTE: The NVMe controller is treated as a character device, whereas the NVMe itself is treated as a block device.
+!!! note
+	The NVMe controller is treated as a character device, whereas the NVMe itself is treated as a block device.
 
 A careful eye may notice that this struct contains 3 separate device fields:
 ```c
@@ -125,7 +126,8 @@ device_initialize(&ctrl->ctrl_device);
 ctrl->device = &ctrl->ctrl_device;
 ```
 
-> IMPORTANT: The controller device is then set to be the child of the PCIe device in the same function again as `ctrl->device->parent = ctrl->dev;`
+!!! info "Important"
+	The controller device is then set to be the child of the PCIe device in the same function again as `ctrl->device->parent = ctrl->dev;`
 
 
 2. `int result = nvme_add_ctrl(&dev->ctrl);`: This registers the NVMe controller object.
@@ -162,11 +164,13 @@ Here is the summary of the important lines I found, line by line:
 
 - `pci_enable_device_mem(to_pci_dev(dev->dev))`: "Initializes a device before it is used by a driver". This asks the PCI core to enable the device for MMIO use. 
 
-> NOTE: NVMe controllers expose their registers through the PCI's BAR memory. Therefore,  it is important to initialize a device with the corrrect memory resources to be able to access the BAR via memory-mapped registers.
+!!! note
+	NVMe controllers expose their registers through the PCI's BAR memory. Therefore,  it is important to initialize a device with the corrrect memory resources to be able to access the BAR via memory-mapped registers.
 
 - `pci_set_master(pdev)`: "Enables bus-masering on the device and calls pcibios_master() to do the needed arch specific settings"
 
-> NOTE: NVMe uses DMA a lot for submission queues, completion queues, PRP lists, etc. This function enables the PCI device to become a bus master, therefore the device can now initiate DMA reads and writes to system memory. 
+!!! note
+	NVMe uses DMA a lot for submission queues, completion queues, PRP lists, etc. This function enables the PCI device to become a bus master, therefore the device can now initiate DMA reads and writes to system memory. 
 
 **Which bus is being "mastered" though?** 
 In traditional and legacy systems where the computer architecture contains the Northbridge/Southbridge, when a device becomes bus master, it is taking control of its local bus (which is the link that connects it to the Southbridge). 

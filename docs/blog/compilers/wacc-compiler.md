@@ -32,132 +32,133 @@ Obviously, this pipeline can be expanded / shrinked depending on language gramma
 
 For example, Scala 3 has 80+ passes! They are:
 
-```
-phase name  description
-----------  -----------
-    parser  scan and parse sources
-     typer  type the trees
-checkUnusedPostTyper  check for unused elements
-checkShadowing  check for elements shadowing other elements in scope
-inlinedPositions  check inlined positions
-  sbt-deps  sends information on classes' dependencies to sbt
-extractSemanticDBExtractSemanticInfo
-            extract info into .semanticdb files
- posttyper  additional checks and cleanups after type checking
-unrollDefs  generates forwarders for methods annotated with @unroll
-prepjsinterop  additional checks and transformations for Scala.js
-SetRootTree  set the rootTreeOrProvider on class symbols
-   pickler  generates TASTy info
-   sbt-api  sends a representation of the API of classes to sbt
-  inlining  inline and execute macros
-postInlining  add mirror support for inlined code
-   staging  check staging levels and heal staged types
-  splicing  splicing
-pickleQuotes  turn quoted trees into explicit run-time data
-            structures
-checkUnusedPostInlining  check for unused elements
-instrumentCoverage  instrument code for coverage checking
-crossVersionChecks  check issues related to deprecated and experimental
-firstTransform  some transformations to put trees into a canonical form
-checkReentrant  check no data races involving global vars
-elimPackagePrefixes  eliminate references to package prefixes in Select
-            nodes
-cookComments  cook the comments: expand variables, doc, etc.
-checkLoopingImplicits  check that implicit defs do not call themselves in an
-            infinite loop
-betaReduce  reduce closure applications
-inlineVals  check right hand-sides of an `inline val`s
-expandSAMs  expand SAM closures to anonymous classes
-elimRepeated  rewrite vararg parameters and arguments
- refchecks  checks related to abstract members and overriding
-dropForMap  Drop unused trailing map calls in for comprehensions
-extractSemanticDBAppendDiagnostics
-            extract info into .semanticdb files
-initChecker  check initialization of objects
-protectedAccessors  add accessors for protected members
-extmethods  expand methods of value classes with extension methods
-uncacheGivenAliases  avoid caching RHS of simple parameterless given aliases
-checkStatic  check restrictions that apply to @static members
-elimByName  map by-name parameters to functions
-hoistSuperArgs  hoist complex arguments of supercalls to enclosing
-            scope
-forwardDepChecks  ensure no forward references to local vals
-specializeApplyMethods  adds specialized methods to FunctionN
-tryCatchPatterns  compile cases in try/catch
-patternMatcher  compile pattern matches
-preRecheck  preRecheck
-   recheck  recheck
-   setupCC  prepare compilation unit for capture checking
-        cc  capture checking
-elimOpaque  turn opaque into normal aliases
-explicitJSClasses  make all JS classes explicit
-explicitOuter  add accessors to outer classes from nested ones
-explicitSelf  make references to non-trivial self types explicit as
-            casts
-interpolators  optimize s, f, and raw string interpolators
-dropBreaks  replace local Break throws by labeled returns
-pruneErasedDefs  drop erased definitions and simplify erased expressions
-uninitialized  eliminates `compiletime.uninitialized`
-inlinePatterns  remove placeholders of inlined patterns
-vcInlineMethods  inlines calls to value class methods
-seqLiterals  express vararg arguments as arrays
-intercepted  rewrite universal `!=`, `##` methods
-   getters  replace non-private vals and vars with getter defs
-specializeFunctions  specialize Function{0,1,2} by replacing super with
-            specialized super
-specializeTuples  replaces tuple construction and selection trees
-collectNullableFields  collect fields that can be nulled out after use in lazy
-            initialization
-elimOuterSelect  expand outer selections
-resolveSuper  implement super accessors
-functionXXLForwarders  add forwarders for FunctionXXL apply methods
-paramForwarding  add forwarders for aliases of superclass parameters
-genericTuples  optimize generic operations on tuples
-letOverApply  lift blocks from receivers of applications
-arrayConstructors  intercept creation of (non-generic) arrays and
-            intrinsify
-   erasure  rewrite types to JVM model
-elimErasedValueType  expand erased value types to their underlying
-            implementation types
- pureStats  remove pure statements in blocks
-vcElideAllocations  peep-hole optimization to eliminate unnecessary value
-            class allocations
- etaReduce  reduce eta expansions of pure paths
-arrayApply  optimize `scala.Array.apply`
-addLocalJSFakeNews  adds fake new invocations to local JS classes in calls
-            to `createLocalJSClass`
-elimPolyFunction  rewrite PolyFunction subclasses to FunctionN subclasses
-   tailrec  rewrite tail recursion to loops
-completeJavaEnums  fill in constructors for Java enums
-     mixin  expand trait fields and trait initializers
-  lazyVals  expand lazy vals
-   memoize  add private fields to getters and setters
-nonLocalReturns  expand non-local returns
-capturedVars  represent vars captured by closures as heap objects
-constructors  collect initialization code in primary constructors
-instrumentation  count calls and allocations under -Yinstrument
-lambdaLift  lifts out nested functions to class scope
-elimStaticThis  replace This references to static objects by global
-            identifiers
-countOuterAccesses  identify outer accessors that can be dropped
-dropOuterAccessors  drop unused outer accessors
-dropParentRefinements  drop parent refinements from a template
-checkNoSuperThis  check that supercalls don't contain references to This
-   flatten  lift all inner classes to package scope
-transformWildcards  replace wildcards with default values
-moveStatic  move static methods from companion to the class itself
-expandPrivate  widen private definitions accessed from nested classes
-restoreScopes  repair rendered invalid scopes
-selectStatic  get rid of selects that would be compiled into
-            GetStatic
-junitBootstrappers  generate JUnit-specific bootstrapper classes for
-            Scala.js
-Collect entry points  collect all entry points and save them in the context
-collectSuperCalls  find classes that are called with super
-repeatableAnnotations  aggregate repeatable annotations
-  genSJSIR  generate .sjsir files for Scala.js
-  genBCode  generate JVM bytecode
-```
+??? info "Scala Phases"
+    ```
+    phase name  description
+    ----------  -----------
+        parser  scan and parse sources
+         typer  type the trees
+    checkUnusedPostTyper  check for unused elements
+    checkShadowing  check for elements shadowing other elements in scope
+    inlinedPositions  check inlined positions
+      sbt-deps  sends information on classes' dependencies to sbt
+    extractSemanticDBExtractSemanticInfo
+                extract info into .semanticdb files
+     posttyper  additional checks and cleanups after type checking
+    unrollDefs  generates forwarders for methods annotated with @unroll
+    prepjsinterop  additional checks and transformations for Scala.js
+    SetRootTree  set the rootTreeOrProvider on class symbols
+       pickler  generates TASTy info
+       sbt-api  sends a representation of the API of classes to sbt
+      inlining  inline and execute macros
+    postInlining  add mirror support for inlined code
+       staging  check staging levels and heal staged types
+      splicing  splicing
+    pickleQuotes  turn quoted trees into explicit run-time data
+                structures
+    checkUnusedPostInlining  check for unused elements
+    instrumentCoverage  instrument code for coverage checking
+    crossVersionChecks  check issues related to deprecated and experimental
+    firstTransform  some transformations to put trees into a canonical form
+    checkReentrant  check no data races involving global vars
+    elimPackagePrefixes  eliminate references to package prefixes in Select
+                nodes
+    cookComments  cook the comments: expand variables, doc, etc.
+    checkLoopingImplicits  check that implicit defs do not call themselves in an
+                infinite loop
+    betaReduce  reduce closure applications
+    inlineVals  check right hand-sides of an `inline val`s
+    expandSAMs  expand SAM closures to anonymous classes
+    elimRepeated  rewrite vararg parameters and arguments
+     refchecks  checks related to abstract members and overriding
+    dropForMap  Drop unused trailing map calls in for comprehensions
+    extractSemanticDBAppendDiagnostics
+                extract info into .semanticdb files
+    initChecker  check initialization of objects
+    protectedAccessors  add accessors for protected members
+    extmethods  expand methods of value classes with extension methods
+    uncacheGivenAliases  avoid caching RHS of simple parameterless given aliases
+    checkStatic  check restrictions that apply to @static members
+    elimByName  map by-name parameters to functions
+    hoistSuperArgs  hoist complex arguments of supercalls to enclosing
+                scope
+    forwardDepChecks  ensure no forward references to local vals
+    specializeApplyMethods  adds specialized methods to FunctionN
+    tryCatchPatterns  compile cases in try/catch
+    patternMatcher  compile pattern matches
+    preRecheck  preRecheck
+       recheck  recheck
+       setupCC  prepare compilation unit for capture checking
+            cc  capture checking
+    elimOpaque  turn opaque into normal aliases
+    explicitJSClasses  make all JS classes explicit
+    explicitOuter  add accessors to outer classes from nested ones
+    explicitSelf  make references to non-trivial self types explicit as
+                casts
+    interpolators  optimize s, f, and raw string interpolators
+    dropBreaks  replace local Break throws by labeled returns
+    pruneErasedDefs  drop erased definitions and simplify erased expressions
+    uninitialized  eliminates `compiletime.uninitialized`
+    inlinePatterns  remove placeholders of inlined patterns
+    vcInlineMethods  inlines calls to value class methods
+    seqLiterals  express vararg arguments as arrays
+    intercepted  rewrite universal `!=`, `##` methods
+       getters  replace non-private vals and vars with getter defs
+    specializeFunctions  specialize Function{0,1,2} by replacing super with
+                specialized super
+    specializeTuples  replaces tuple construction and selection trees
+    collectNullableFields  collect fields that can be nulled out after use in lazy
+                initialization
+    elimOuterSelect  expand outer selections
+    resolveSuper  implement super accessors
+    functionXXLForwarders  add forwarders for FunctionXXL apply methods
+    paramForwarding  add forwarders for aliases of superclass parameters
+    genericTuples  optimize generic operations on tuples
+    letOverApply  lift blocks from receivers of applications
+    arrayConstructors  intercept creation of (non-generic) arrays and
+                intrinsify
+       erasure  rewrite types to JVM model
+    elimErasedValueType  expand erased value types to their underlying
+                implementation types
+     pureStats  remove pure statements in blocks
+    vcElideAllocations  peep-hole optimization to eliminate unnecessary value
+                class allocations
+     etaReduce  reduce eta expansions of pure paths
+    arrayApply  optimize `scala.Array.apply`
+    addLocalJSFakeNews  adds fake new invocations to local JS classes in calls
+                to `createLocalJSClass`
+    elimPolyFunction  rewrite PolyFunction subclasses to FunctionN subclasses
+       tailrec  rewrite tail recursion to loops
+    completeJavaEnums  fill in constructors for Java enums
+         mixin  expand trait fields and trait initializers
+      lazyVals  expand lazy vals
+       memoize  add private fields to getters and setters
+    nonLocalReturns  expand non-local returns
+    capturedVars  represent vars captured by closures as heap objects
+    constructors  collect initialization code in primary constructors
+    instrumentation  count calls and allocations under -Yinstrument
+    lambdaLift  lifts out nested functions to class scope
+    elimStaticThis  replace This references to static objects by global
+                identifiers
+    countOuterAccesses  identify outer accessors that can be dropped
+    dropOuterAccessors  drop unused outer accessors
+    dropParentRefinements  drop parent refinements from a template
+    checkNoSuperThis  check that supercalls don't contain references to This
+       flatten  lift all inner classes to package scope
+    transformWildcards  replace wildcards with default values
+    moveStatic  move static methods from companion to the class itself
+    expandPrivate  widen private definitions accessed from nested classes
+    restoreScopes  repair rendered invalid scopes
+    selectStatic  get rid of selects that would be compiled into
+                GetStatic
+    junitBootstrappers  generate JUnit-specific bootstrapper classes for
+                Scala.js
+    Collect entry points  collect all entry points and save them in the context
+    collectSuperCalls  find classes that are called with super
+    repeatableAnnotations  aggregate repeatable annotations
+      genSJSIR  generate .sjsir files for Scala.js
+      genBCode  generate JVM bytecode
+    ```
 
 The last stage, `genBCode` generates the JVM bytecode (as Scala is a JVM language), therefore it can be considered as its backend.
 
