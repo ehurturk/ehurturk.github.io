@@ -1,3 +1,7 @@
+---
+icon: lucide/hard-drive
+---
+
 # How does the Linux kernel-level NVMe driver work?
 
 NOTE: Linux NVMe driver is a kernel module, thus it runs in the kernel space with the kernel priveleges.

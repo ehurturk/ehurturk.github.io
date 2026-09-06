@@ -1,5 +1,5 @@
 ---
-icon: lucide/codepen
+icon: lucide/code-2
 ---
 
 # Compilers
