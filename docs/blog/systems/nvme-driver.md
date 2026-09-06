@@ -87,8 +87,8 @@ static struct pci_driver nvme_driver = {
 - `nvme_id_table` is a table of NVMe manufacturer/device IDs, from Intel to QEMU's emulated hardware.
 - `nvme_probe` is the probe function, called during `pci_register_device()` when the driver takes ownership of a device that matches the ID table.
 - `nvme_remove` is called when a device owned by the driver is removed.
-- `nvme_shutdown` stops any in-flight DMA operations before shutdown.
-- `driver` is a `device_driver` struct — the "basic device driver" fields (name, bus, owner, module name, etc.), defined in `include/linux/device/driver.h`.
+- `nvme_shutdown` stops any in flight DMA operations before shutdown.
+- `driver` is a `device_driver` struct and contains the basic device driver fields (name, bus, owner, module name, etc.). This is defined in `include/linux/device/driver.h`.
 
 ## How is the NVMe driver initialized?
 
@@ -96,11 +96,13 @@ The PCI core compares discovered PCI devices against the driver's `id_table`. If
 
 So in `nvme_probe()`, the driver has to claim ownership of the passed-in `pci_dev`. It does this in a few steps:
 
-**1. Allocate driver-private state** — `struct nvme_dev* dev = nvme_pci_alloc_dev(pdev, id);`
+**1. Allocate driver state** 
+
+`struct nvme_dev* dev = nvme_pci_alloc_dev(pdev, id);`
 
 This also initializes the NVMe controller via `nvme_init_ctrl(&dev->ctrl, &pdev->dev, ...)`, which sets the controller's `dev` field to the parent PCI device's `device` struct.
 
-An `nvme_dev` struct represents an NVMe device — "each `nvme_dev` is a PCI function" (per the kernel docs). It holds the NVMe queues, tagset, I/O queue list, mapped BAR size, the controller itself (`struct nvme_ctrl ctrl`), and other NVMe-related fields.
+An `nvme_dev` struct represents an NVMe device. It holds the NVMe queues, tagset, IO queue list, mapped BAR size, the controller itself (`struct nvme_ctrl ctrl`), and other nvme related fields.
 
 !!! note
 
@@ -120,13 +122,15 @@ struct device* device;
 
     !!! important
 
-        The controller device is then set as a child of the PCIe device, in the same function: `ctrl->device->parent = ctrl->dev;`
+        The controller device is then set as a child of the PCIe device in the same function: `ctrl->device->parent = ctrl->dev;`
 
-**2. Register the NVMe controller** — `int result = nvme_add_ctrl(&dev->ctrl);`
+**2. Register the NVMe controller** 
 
-The controller holds all the admin queues, namespace information, the NVMe subsystem, and more. `nvme_add_ctrl()` returns an elevated controller reference. A few notable bits along the way:
+`int result = nvme_add_ctrl(&dev->ctrl);`
 
-- `dev_set_name(ctrl->device, "nvme%d", ctrl->instance)` sets the NVMe device's name.
+The controller holds all the admin queues, namespace information, the NVMe subsystem, etc.
+
+- `dev_set_name(ctrl->device, "nvme%d", ctrl->instance)` sets the nvme device's name.
 - The controller's character device is initialized and added to the system:
 
   ```c
@@ -135,44 +139,55 @@ The controller holds all the admin queues, namespace information, the NVMe subsy
   ret = cdev_device_add(&ctrl->cdev, ctrl->device);
   ```
 
-**3. Remap the BAR region** — `nvme_dev_map(dev);` remaps the device's BAR region, sized `NVME_REG_DBS + 4096`.
+**3. Remap the BAR region**
 
-  !!! note
+`nvme_dev_map(dev);` maps the device's BAR region and the siz eis `NVME_REG_DBS + 4096`.
 
-      `NVME_REG_DBS` is the address of the Submission Queue 0 Tail Doorbell register, `0x1000`.
+   !!! note
 
-*(Omitting some code in between for brevity.)*
+      `NVME_REG_DBS` is the address of the Submission Queue 0 Tail Doorbell register which is 0x1000.
 
-**4. Bring the PCI NVMe controller up** — `nvme_pci_enable(dev)` gets the controller into a usable state and sets up the admin queue, the first queue needed before the driver can send NVMe admin commands. Specifically, it:
+**4. Bring the PCI NVMe controller up**
+
+`nvme_pci_enable(dev)` gets the controller into a usable state and sets up the admin queue which is the first queue needed before the driver can send NVMe admin commands. Specifically, it:
 
 - Enables the PCI device
-- Enables DMA
+- Enables DMA (via being a bus master)
 - Checks that the controller is readable
 - Allocates the initial interrupt vector
 - Reads the NVMe capabilities
 - Computes queue and doorbell parameters
 - Configures the admin queue
 
-The important calls along the way, roughly in order:
+I traced the call stack and ordered the important calls along the way as:
 
-- `pci_enable_device_mem(to_pci_dev(dev->dev))` — initializes the device before a driver uses it, asking the PCI core to enable it for MMIO. NVMe controllers expose their registers through PCI BAR memory, so the device needs the right memory resources mapped before the BAR's memory-mapped registers can be accessed.
+- `pci_enable_device_mem(to_pci_dev(dev->dev))`: initializes the device before a driver uses it, asking the PCI core to enable it for MMIO. NVMe controllers expose their registers through PCI BAR memory, so the device needs the right memory resources mapped before the BAR's mmapped registers can be accessed.
 
-- `pci_set_master(pdev)` — enables bus-mastering on the device and calls `pcibios_set_master()` to apply arch-specific settings. NVMe relies heavily on DMA for submission queues, completion queues, and PRP lists, so this lets the PCI device initiate DMA reads and writes to system memory on its own.
+- `pci_set_master(pdev)` — enables bus mastering on the device and calls `pcibios_set_master()` to apply architecture specific settings. By being a bus master a PCI device can handle DMA requests.
 
-    **Which bus is actually being "mastered"?** On legacy systems with a Northbridge/Southbridge, becoming bus master means taking control of the device's local bus — the link to the Southbridge. The device never masters the memory bus directly; it has no wires to the memory controller. Even fast devices like NVMes and GPUs never become masters of the actual DDR memory bus, which belongs exclusively to the CPU's integrated memory controller.
 
-    On modern mobile/laptop systems, the PCH is embedded into the CPU package as an SoC. The move to PCIe's point-to-point topology made every device a bus master by default, PCH or not — every PCIe device has its own DMA engine and sends DMA requests as standard packets over the PCIe wires.
+I was quite confused by the term of bus mastering so I did a bit of digging on this and found the following. I was basically confused on which bus the device was mastering on.
 
-    There's still a distinction between high-speed and standard devices:
+#### Which bus is actually being mastered?
 
-    - Modern CPUs have PCIe controllers on-die. When a high-speed device (GPU/NVMe) initiates a DMA transfer, it sends a memory request directly to the CPU, which routes it through an internal bus to the IOMMU for validation and address translation, then to the memory controller for the DDR read/write.
-    - Standard devices (audio, LAN, SATA) go through the PCH first, which forwards the request across the DMI link to the CPU, where it's handled the same way as high-speed devices from that point on.
+On legacy systems with a Northbridge/Southbridge, becoming bus master means taking control of the device's local bus which is the link to the Southbridge. The device never masters the memory bus directly as it has no direct connection to the memory controller. Even fast devices like NVMes and GPUs never become masters of the actual DDR memory bus, which belongs exclusively to the CPU's integrated memory controller.
 
-    So the key difference is that high-speed devices talk to the CPU directly, while standard devices are relayed through the PCH via DMI/OPI — meaning high-speed devices avoid DMI-link contention entirely. (In SoC designs, the "link" between the embedded PCH and CPU cores is an internal, ultra-fast silicon interconnect rather than an external DMI bus.)
+On modern mobile/laptop systems, there is something called the PCH and it is embedded into the CPU package as an SoC. 
 
-- `readl(dev->bar + NVME_REG_CSTS) == -1` — checks that the controller responds. `CSTS` is the NVMe controller status register, read through the mapped BAR.
+Now by having this PCIe technology where every device is connected in a point to point fashion, every device is kinda like a bus master by default. THis means that every PCIe device has its own DMA engine and sends DMA requests as standard packets over the PCIe connections.
 
-- `dev->ctrl.cap = lo_hi_readq(dev->bar + NVME_REG_CAP);` — reads the capabilities register.
+There's still a distinction between high speed and standard devices though:
+
+- Modern CPUs have PCIe controllers on die, which means that when a high speed device (GPU/NVMe) initiates a DMA transfer, it sends a memory request directly to the CPU, which routes it through an internal bus to the IOMMU for validation and address translation, then to the memory controller for the DDR read and write.
+- Standard devices (audio, LAN, SATA, etc.) go through the PCH first, which forwards the request across the DMI link to the CPU, where it's handled the same way as high speed devices from that point on.
+
+So the key difference is that high speed devices talk to the CPU directly, while standard devices are connected through the PCH via DMI/OPI, meaning high speed devices avoid DMI link contention entirely.
+
+
+ANyways, back to the call stack:
+- `readl(dev->bar + NVME_REG_CSTS) == -1`: this checks that the controller responds. `CSTS` is the NVMe controller status register, read through the mapped BAR region.
+
+- `dev->ctrl.cap = lo_hi_readq(dev->bar + NVME_REG_CAP);`: this reads the capabilities register.
 
 - NVMe field calculations:
 
@@ -184,12 +199,13 @@ The important calls along the way, roughly in order:
 
   These compute the queue depth, the doorbell stride, and the doorbell base.
 
-- `nvme_map_cmb(dev)` — maps the controller memory buffer.
-- `pci_save_state(pdev)` — saves PCI configuration state so it can be restored after reset, suspend, or error recovery.
-- `nvme_pci_configure_admin_queue(dev)` — creates and enables NVMe queue pair 0, the admin submission and completion queues.
+- `nvme_map_cmb(dev)`: this maps the controller memory buffer.
+- `nvme_pci_configure_admin_queue(dev)`: creates and enables the admin queue pairs.
 
 ### Admin queue configuration
 
-!!! note "Work in progress"
+TODO
 
-    I haven't written up admin queue configuration yet — I'll add it here once it's done.
+### IO quee configuration
+
+TODO
