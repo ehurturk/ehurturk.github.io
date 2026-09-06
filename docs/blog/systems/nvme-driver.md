@@ -172,21 +172,15 @@ Here is the summary of the important lines I found, line by line:
 !!! note
 	NVMe uses DMA a lot for submission queues, completion queues, PRP lists, etc. This function enables the PCI device to become a bus master, therefore the device can now initiate DMA reads and writes to system memory. 
 
-**Which bus is being "mastered" though?** 
-In traditional and legacy systems where the computer architecture contains the Northbridge/Southbridge, when a device becomes bus master, it is taking control of its local bus (which is the link that connects it to the Southbridge). 
+??? info "Which bus is being "mastered" though?"
+	In traditional and legacy systems where the computer architecture contains the Northbridge/Southbridge, when a device becomes bus master, it is taking control of its local bus (which is the link that connects it to the Southbridge).
+	Note that the device **DOES NOT** master the memory bus directly as it has no wires touching the memory controller. Even though devices like NVMes and GPUs are designed to be high-speed, they never become masters of the actual memory bus. The memory bus (DDR4/DDR5) is an ultra-fast connection that belongs exlucisevly to CPU's integrated memory controller. 
+	Especially in modern mobile/laptop systems the PCH functionality is embedded entirely into the CPU package as a SoC. Therefore, the tansition to the PCIe architecture made every device a bus master by default regardless of whether a physical PCH exists (due to the point-to-point network architecture of PCIe), so every PCIe device can initiate DMA requests through their own DMA engines, and send these DMA requests over the PCIe wires as standard packets.
+	A distinction between high-speed and standard devices is:
+	- Modern CPUs have PCIe controllers baked onto the main processor die. When high speed devices (GPU/NVMe) initiate a DMA transfer, the device takes control of the bus and sends a memory request directly to the CPU chip, which is handled by an internal bus and passed to the IOMMU for memory validation and address translation. Then the internal memory controller accepts the request and executes the read/write on the DDR memory bus.
+	- Standard devices (Audio, LAN, SATA) master the PCIe bus connected to the PCH which forwards it across the Direct Media Interface (DMI) link (bus between the chipset and the CPU), which is then executed as the same as the high-speed devices inside the CPU.
+	Therefore, the main distinction is that high-speed devices sends its request directly to the CPU, whereas standard devices send their requests to PCH first which is then forwarded to the CPU via DMI/OPI. Therefore, high-speed devices directly avoid the contention in the DMI link. Note that in the SoC designs, the bus between the embedded PCH and CPU cores is an internal, ultra-fast silicon interconnect rather than the external DMI bus.
 
-Note that the device **DOES NOT** master the memory bus directly as it has no wires touching the memory controller. Even though devices like NVMes and GPUs are designed to be high-speed, they never become masters of the actual memory bus. The memory bus (DDR4/DDR5) is an ultra-fast connection that belongs exlucisevly to CPU's integrated memory controller. 
-
-Especially in modern mobile/laptop systems the PCH functionality is embedded entirely into the CPU package as a SoC. Therefore, the tansition to the PCIe architecture made every device a bus master by default regardless of whether a physical PCH exists (due to the point-to-point network architecture of PCIe), so every PCIe device can initiate DMA requests through their own DMA engines, and send these DMA requests over the PCIe wires as standard packets.
-
-
-A distinction between high-speed and standard devices is:
-- Modern CPUs have PCIe controllers baked onto the main processor die. When high speed devices (GPU/NVMe) initiate a DMA transfer, the device takes control of the bus and sends a memory request directly to the CPU chip, which is handled by an internal bus and passed to the IOMMU for memory validation and address translation. Then the internal memory controller accepts the request and executes the read/write on the DDR memory bus.
-- Standard devices (Audio, LAN, SATA) master the PCIe bus connected to the PCH which forwards it across the Direct Media Interface (DMI) link (bus between the chipset and the CPU), which is then executed as the same as the high-speed devices inside the CPU.
-
-Therefore, the main distinction is that high-speed devices sends its request directly to the CPU, whereas standard devices send their requests to PCH first which is then forwarded to the CPU via DMI/OPI. Therefore, high-speed devices directly avoid the contention in the DMI link. Note that in the SoC designs, the bus between the embedded PCH and CPU cores is an internal, ultra-fast silicon interconnect rather than the external DMI bus.
-
-Anyways:
 
 - `readl(dev->bar + NVME_REG_CSTS) == -1`: Checks that the controller responds. `CSTS` is the NVMe controller status register, and the driver reads it via the mapped BAR.
 

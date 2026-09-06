@@ -32,7 +32,8 @@ Obviously, this pipeline can be expanded / shrinked depending on language gramma
 
 For example, Scala 3 has 80+ passes! They are:
 
-??? info "Scala Phases"
+??? info "Full Scala 3 compiler phase list (80+ passes)"
+
     ```
     phase name  description
     ----------  -----------
