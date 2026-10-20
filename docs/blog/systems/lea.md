@@ -36,6 +36,7 @@ The effective address is calculated as:
 $$
 \text{Effective Address} = \text{Base} + (\text{Index} \times \text{Scale}) + \text{Displacement}
 $$
+
 where $\text{Scale}$ is a power of two and is typically $\in \{1,2,4,8\}$
 
 So far so good?
@@ -63,6 +64,7 @@ regular `add` instruction, which is a small optimization.
 ## Is this all?
 
 No! There is another important difference between these 2 instructions:
+
 - `add` sets CPU flags (e.g. ZF, SF, PF etc.)
 - `lea` doesn't set any flags for its computation!
 
@@ -76,6 +78,7 @@ effective address.
 
 It is easy to add 2 integers in hardware, we just reqquire a standard 2 input adder. Therefore,
 `lea eax, [rdi + 10]` is relatively easy. In fact, all of these patterns can be done with a 2 input adder:
+
 - `[Base + Index]` e.g. `lea edx, [rdi + rsi]`
 - `[Base + Displacement]` e.g. `lea edx, [rdi + 10]`
 - `[Base + Index * Scale]` e.g. `lea edx, [rdi + rdi * 2]`
@@ -83,6 +86,7 @@ It is easy to add 2 integers in hardware, we just reqquire a standard 2 input ad
 The scale can easily be done before the ALU with a pre-shifter, as the scale can only be 1, 2, 4, 8.
 
 Things gets complicated when we use the full effective address calculation scheme that uses 3 additions:
+
 - `[Base + Index + Displacement]` e.g. `lea edx, [rdi + rsi + 4]`
 - `[Base + Index * Scale + Displacement]` e.g. `lea edx, [rdi + rsi * 2 + 4]`
 
@@ -96,6 +100,7 @@ only certain ALU ports can execute these types of complex operations. One other 
 How is the effective address of the `lea` calculated though? 
 
 There might be a couple of options in an architetural point of view here:
+
 - We might very well use the standard ALU to calculate the effective address
 - We might utilize the Address Generation Unit (AGU) that is used for address calculation for the `mov` insructions
 
@@ -141,14 +146,16 @@ AGUs are used for the complex versions of it. This way, it is actually possible 
 cycle, whereas it is not possible to do 3 memory operations in 1 cycle because the data cache only takes in 2 ports.
 
 In the K10 microprocessor:
+
 - if a `lea` contains 2 operands, then it could be done in the ALU.
 - if a `lea` contains a scale factor, or both a base, index, displacement values, then it uses the AGU to compute the address.
-  - It is also noted that a `lea` that is executed in the AGU has a latency of 2 clock cycles (which is probably due to not being able to 
-  do fast data forwarding between AGU and ALU).
+    - It is also noted that a `lea` that is executed in the AGU has a latency of 2 clock cycles (which is probably due to not being able to 
+      do fast data forwarding between AGU and ALU).
 
 ## Conclusion
 
 Tying everything together, there is a reason compilers love `lea` over `add`:
+
 - it gives 3 operand addition without needing an additional `add` or `mov`.
 - since `lea` doesn't write to `RFLAGS` CPU flags, it avoids flag dependencies or flag-renaming pressure.
 
