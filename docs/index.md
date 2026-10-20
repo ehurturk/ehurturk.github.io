@@ -15,3 +15,4 @@ icon: lucide/house
 ### Systems
 
 - [How Does the Linux Kernel-Level NVMe Driver Work?](blog/systems/nvme-driver.md): Tracing the Linux kernel's NVMe PCI driver from module init through `nvme_probe()`, PCI BAR mapping, and admin queue setup.
+- [The `lea` instruction and various microprocessors](blog/systems/lea.md): Starting with integer addition, then why compilers prefer `lea`, and then going through different microprocessors on how they execute `lea`.
