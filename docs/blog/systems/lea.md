@@ -1,4 +1,4 @@
-# LEA in x86
+# How Modern x86 CPUs Actually Execute LEA
 
 I'm sure you have all seen the `lea` instruction when looking at an
 x86 assembly. Here is a brief recap of what it does:
@@ -29,8 +29,7 @@ Where did the `add` go? It is replaced by the `lea` instruction.
 
 This instruction is called "load effective address", so presumably one of its operands
 should be a memory address. In this case, the memory address provided is `rdi + 10`. The `lea`
-instruction performs the add and then fetches the data in the memory from that address, and
-loads it to `eax`.
+instruction performs the add and then loads it to `eax`.
 
 The effective address is calculated as:
 
@@ -115,9 +114,14 @@ with the D-TLB/L1D tag arrays. If we were to use this path for just address calc
 using the 64-bit result bus from the memory ports back accross the die into the register file, and we would have to bypass
 the ALU which would add even more routing congestion for zero architectural benefit.
 
+Because of this routing penalty, Golden Cove doesn't use the AGUs for `lea` at all. If you look closely at the Golden Cove
+microarchitecture, each one of the ALU ports has a dedicated `LEA` box attached to it. Therefore, simple 2 operand `lea`
+instructions execute in 1 cycle on any of those 5 ALU ports, while complex 3 operand `lea` instructions with scaling may execute
+on the complex ALU ports that also have pre-shifts.
+
 ### Intel Atom
 
-In the Intel Atom pipeline (which is a microprocessor designed for low power consumption, energy efficiency and compact scale), 
+In the original in order Intel Atom pipeline (which is a microprocessor designed for low power consumption, energy efficiency and compact scale), 
 the `lea` instruction uses the AGU rather than the ALU. This causes a latency of 4 clock cycles when dependent on a pointer register 
 or index register, due to the distance between AGU and ALU. In this architecture, it may be faster to use addition and shift 
 instructions compared to `lea` in most usecases.
@@ -145,7 +149,6 @@ In the K10 microprocessor:
 ## Conclusion
 
 Tying everything together, there is a reason compilers love `lea` over `add`:
-- it gives 3 operand addition without needing an additional `add` or `mov`
-- it avoids creating a false data dependency since it doesn't necessarily perform a memory load
-- it also removes CPU flag renaming pressure on the `RFLAGS` register in the CPU (as it doesn't touch the CPU flags)
+- it gives 3 operand addition without needing an additional `add` or `mov`.
+- since `lea` doesn't write to `RFLAGS` CPU flags, it avoids flag dependencies or flag-renaming pressure.
 
