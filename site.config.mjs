@@ -34,5 +34,9 @@ export default {
       description:
         "Starting with integer addition, then why compilers prefer lea, and then going through different microprocessors on how they execute lea.",
     },
+    "systems/nvme/page-pooling": {
+      date: "2026-11-15",
+      description: "Start of the NVMe series. Walkthrough of implementing a really simple page allocator."
+    }
   },
 };
