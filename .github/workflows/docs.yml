@@ -1,13 +1,17 @@
-name: Documentation
+name: Deploy site
 on:
   push:
     branches:
       - master
       - main
+  workflow_dispatch:
 permissions:
   contents: read
   pages: write
   id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
 jobs:
   deploy:
     environment:
@@ -15,15 +19,18 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/configure-pages@v5
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v5
         with:
-          python-version: 3.x
-      - run: pip install zensical
-      - run: zensical build --clean
+          fetch-depth: 0 # full history so posts without a configured date can use their first commit date
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: site
+          path: dist
       - uses: actions/deploy-pages@v4
         id: deployment
