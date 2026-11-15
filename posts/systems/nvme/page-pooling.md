@@ -7,13 +7,6 @@ icon: lucide/memory-stick
 This is a relatively simple post, which talks about implementing a simple page pool for DMA buffers in the NVMe setup.
 
 ## Introduction
-Before the pool, every DMA-capable buffer was a fresh DmaBuffer, and DmaHeap::alloc created one per command. That had two problems:
-
-1. Cost. Each command paid for 4 syscalls: mmap and VFIO_IOMMU_MAP_DMA to set up, then VFIO_IOMMU_UNMAP_DMA and munmap to tear down. On top of that came page pinning, writing IOMMU page-table entries, and an IOTLB flush. With a real SSD this costs about as much as the I/O itself, and it rules out M3's "no map syscalls in the hot path" goal. The IOVA cursor also only grows, so freed IOVA ranges were never reused.
-2. Lifetime. Unmapping a buffer the device may still write to is unsafe. Your interim fix was to have the RequestTable slot own the DmaBuffer when a command is abandoned. That works, but it ties the request table to VFIO teardown.
-
-The key idea was to separate allocation from mapping. Commands in flight at the same time still need distinct memory, but that memory doesn't have to be mapped again each time. The pool maps one region once at startup and hands out page indices from a free-index stack kept outside the region. Allocating and releasing then cost no syscalls, and pages stay mapped for the pool's lifetime.
-
 
 This is intended to be part 1 of my series in NVMe driver development. I have already a working base and have just started considering writing the process, so we are starting from the middle of the book.
 
